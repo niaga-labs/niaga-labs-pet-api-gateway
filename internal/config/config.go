@@ -18,6 +18,9 @@ type GatewayConfig struct {
 	AppEnv          string
 	RateLimitPerMin int
 	Upstreams       map[string]string
+	KafkaConfig     config.KafkaConfig
+	JWTConfig       config.JWTConfig
+	GatewayID       string
 }
 
 // Load reads gateway configuration from environment variables.
@@ -38,13 +41,19 @@ func Load() (*GatewayConfig, error) {
 	}
 
 	upstreams := map[string]string{
-		"identity": getUpstream(v.GetString("UPSTREAM_IDENTITY"), "http://service-identity:8004"),
-		"runner":   getUpstream(v.GetString("UPSTREAM_RUNNER"), "http://service-runner:8003"),
-		"booking":  getUpstream(v.GetString("UPSTREAM_BOOKING"), "http://service-booking:8001"),
-		"payment":  getUpstream(v.GetString("UPSTREAM_PAYMENT"), "http://service-payment:8002"),
+		"identity":     getUpstream(v.GetString("UPSTREAM_IDENTITY"), "http://service-identity:8004"),
+		"runner":       getUpstream(v.GetString("UPSTREAM_RUNNER"), "http://service-runner:8003"),
+		"booking":      getUpstream(v.GetString("UPSTREAM_BOOKING"), "http://service-booking:8001"),
+		"payment":      getUpstream(v.GetString("UPSTREAM_PAYMENT"), "http://service-payment:8002"),
 		"tracking":     getUpstream(v.GetString("UPSTREAM_TRACKING"), "http://service-tracking:8005"),
 		"notification": getUpstream(v.GetString("UPSTREAM_NOTIFICATION"), "http://service-notification:8006"),
 		"review":       getUpstream(v.GetString("UPSTREAM_REVIEW"), "http://service-review:8007"),
+		"chat":         getUpstream(v.GetString("UPSTREAM_CHAT"), "http://service-chat:8008"),
+	}
+
+	gatewayID := v.GetString("GATEWAY_ID")
+	if gatewayID == "" {
+		gatewayID = "api-gateway-local"
 	}
 
 	return &GatewayConfig{
@@ -52,6 +61,9 @@ func Load() (*GatewayConfig, error) {
 		AppEnv:          v.GetString("APP_ENV"),
 		RateLimitPerMin: rateLimit,
 		Upstreams:       upstreams,
+		KafkaConfig:     config.LoadKafkaConfig(v),
+		JWTConfig:       config.LoadJWTConfig(v),
+		GatewayID:       gatewayID,
 	}, nil
 }
 

@@ -12,6 +12,7 @@ import (
 
 	gwconfig "github.com/Kilat-Pet-Delivery/api-gateway/internal/config"
 	"github.com/Kilat-Pet-Delivery/api-gateway/internal/proxy"
+	"github.com/Kilat-Pet-Delivery/lib-common/auth"
 	"github.com/Kilat-Pet-Delivery/lib-common/logger"
 	"github.com/Kilat-Pet-Delivery/lib-common/middleware"
 	"github.com/gin-gonic/gin"
@@ -43,6 +44,9 @@ func main() {
 	)
 
 	// 3. Create Gin router with global middleware
+	appCtx, appCancel := context.WithCancel(context.Background())
+	defer appCancel()
+
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Use(
@@ -60,6 +64,22 @@ func main() {
 	// 5. WebSocket route (must be explicit — WebSocket needs raw hijacking)
 	router.GET("/ws/tracking/:bookingId", proxy.NewWebSocketProxy(cfg.Upstreams["tracking"], zapLogger))
 
+	jwtManager := auth.NewJWTManager(
+		cfg.JWTConfig.Secret,
+		15*time.Minute,
+		7*24*time.Hour,
+	)
+	chatRealtime := proxy.NewChatRealtime(
+		cfg.Upstreams["chat"],
+		cfg.KafkaConfig.Brokers,
+		cfg.GatewayID,
+		jwtManager,
+		zapLogger,
+	)
+	chatRealtime.Start(appCtx)
+	router.GET("/ws/chat", chatRealtime.HandleChatWS)
+	router.GET("/ws/presence", chatRealtime.HandlePresenceWS)
+
 	// 6. Proxy all /api/v1/* routes via NoRoute — avoids Gin trailing-slash redirects
 	identityProxy := proxy.NewHTTPProxy(cfg.Upstreams["identity"], zapLogger)
 	runnerProxy := proxy.NewHTTPProxy(cfg.Upstreams["runner"], zapLogger)
@@ -68,6 +88,7 @@ func main() {
 	trackingProxy := proxy.NewHTTPProxy(cfg.Upstreams["tracking"], zapLogger)
 	notificationProxy := proxy.NewHTTPProxy(cfg.Upstreams["notification"], zapLogger)
 	reviewProxy := proxy.NewHTTPProxy(cfg.Upstreams["review"], zapLogger)
+	chatProxy := proxy.NewHTTPProxy(cfg.Upstreams["chat"], zapLogger)
 
 	router.NoRoute(func(c *gin.Context) {
 		path := c.Request.URL.Path
@@ -94,6 +115,10 @@ func main() {
 			reviewProxy(c)
 		case strings.HasPrefix(path, "/api/v1/chat"):
 			trackingProxy(c)
+		case strings.HasPrefix(path, "/api/v1/threads"),
+			strings.HasPrefix(path, "/api/v1/quick-replies"),
+			strings.HasPrefix(path, "/api/v1/presence"):
+			chatProxy(c)
 		case strings.HasPrefix(path, "/api/v1/promos"):
 			paymentProxy(c)
 		case strings.HasPrefix(path, "/api/v1/subscriptions"):
@@ -134,6 +159,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	zapLogger.Info("shutting down api-gateway...")
+	appCancel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()

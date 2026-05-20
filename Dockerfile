@@ -2,8 +2,11 @@ FROM golang:1.24-alpine AS builder
 RUN apk add --no-cache git ca-certificates tzdata
 WORKDIR /build
 COPY lib-common ./lib-common
+COPY lib-proto ./lib-proto
 COPY api-gateway ./api-gateway
 WORKDIR /build/lib-common
+RUN go mod download
+WORKDIR /build/lib-proto
 RUN go mod download
 WORKDIR /build/api-gateway
 RUN go mod download && go mod tidy
