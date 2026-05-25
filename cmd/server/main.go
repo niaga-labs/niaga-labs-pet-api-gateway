@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
 	gwconfig "github.com/Kilat-Pet-Delivery/api-gateway/internal/config"
 	"github.com/Kilat-Pet-Delivery/api-gateway/internal/proxy"
+	"github.com/Kilat-Pet-Delivery/api-gateway/internal/ratelimit"
+	"github.com/Kilat-Pet-Delivery/api-gateway/internal/routes"
 	"github.com/Kilat-Pet-Delivery/lib-common/auth"
 	"github.com/Kilat-Pet-Delivery/lib-common/logger"
 	"github.com/Kilat-Pet-Delivery/lib-common/middleware"
@@ -55,6 +56,7 @@ func main() {
 		middleware.RequestIDMiddleware(),
 		middleware.CORSMiddleware(),
 		middleware.SecurityHeadersMiddleware(),
+		ratelimit.PolicyMiddleware(),
 		middleware.RateLimitMiddleware(cfg.RateLimitPerMin, time.Minute),
 	)
 
@@ -81,62 +83,7 @@ func main() {
 	router.GET("/ws/presence", chatRealtime.HandlePresenceWS)
 
 	// 6. Proxy all /api/v1/* routes via NoRoute — avoids Gin trailing-slash redirects
-	identityProxy := proxy.NewHTTPProxy(cfg.Upstreams["identity"], zapLogger)
-	runnerProxy := proxy.NewHTTPProxy(cfg.Upstreams["runner"], zapLogger)
-	bookingProxy := proxy.NewHTTPProxy(cfg.Upstreams["booking"], zapLogger)
-	paymentProxy := proxy.NewHTTPProxy(cfg.Upstreams["payment"], zapLogger)
-	trackingProxy := proxy.NewHTTPProxy(cfg.Upstreams["tracking"], zapLogger)
-	notificationProxy := proxy.NewHTTPProxy(cfg.Upstreams["notification"], zapLogger)
-	reviewProxy := proxy.NewHTTPProxy(cfg.Upstreams["review"], zapLogger)
-	chatProxy := proxy.NewHTTPProxy(cfg.Upstreams["chat"], zapLogger)
-
-	router.NoRoute(func(c *gin.Context) {
-		path := c.Request.URL.Path
-		switch {
-		case strings.HasPrefix(path, "/api/v1/auth"):
-			identityProxy(c)
-		case strings.HasPrefix(path, "/api/v1/referrals"):
-			identityProxy(c)
-		case strings.HasPrefix(path, "/api/v1/runners"):
-			runnerProxy(c)
-		case strings.HasPrefix(path, "/api/v1/bookings"):
-			bookingProxy(c)
-		case strings.HasPrefix(path, "/api/v1/pets"):
-			bookingProxy(c)
-		case strings.HasPrefix(path, "/api/v1/payments"):
-			paymentProxy(c)
-		case strings.HasPrefix(path, "/api/v1/tracking"):
-			trackingProxy(c)
-		case strings.HasPrefix(path, "/api/v1/notifications"):
-			notificationProxy(c)
-		case strings.HasPrefix(path, "/api/v1/petshops"):
-			runnerProxy(c)
-		case strings.HasPrefix(path, "/api/v1/reviews"):
-			reviewProxy(c)
-		case strings.HasPrefix(path, "/api/v1/chat"):
-			trackingProxy(c)
-		case strings.HasPrefix(path, "/api/v1/threads"),
-			strings.HasPrefix(path, "/api/v1/quick-replies"),
-			strings.HasPrefix(path, "/api/v1/presence"):
-			chatProxy(c)
-		case strings.HasPrefix(path, "/api/v1/promos"):
-			paymentProxy(c)
-		case strings.HasPrefix(path, "/api/v1/subscriptions"):
-			paymentProxy(c)
-		case strings.HasPrefix(path, "/api/v1/admin/users"),
-			strings.HasPrefix(path, "/api/v1/admin/stats/users"):
-			identityProxy(c)
-		case strings.HasPrefix(path, "/api/v1/admin/bookings"),
-			strings.HasPrefix(path, "/api/v1/admin/stats/bookings"):
-			bookingProxy(c)
-		case strings.HasPrefix(path, "/api/v1/admin/payments"),
-			strings.HasPrefix(path, "/api/v1/admin/promos"),
-			strings.HasPrefix(path, "/api/v1/admin/stats/payments"):
-			paymentProxy(c)
-		default:
-			c.JSON(http.StatusNotFound, gin.H{"error": "route not found", "success": false})
-		}
-	})
+	router.NoRoute(routes.NewNoRouteHandler(cfg.Upstreams, zapLogger))
 
 	// 7. Start HTTP server with extended timeouts for proxy/WebSocket
 	srv := &http.Server{

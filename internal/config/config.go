@@ -49,6 +49,9 @@ func Load() (*GatewayConfig, error) {
 		"notification": getUpstream(v.GetString("UPSTREAM_NOTIFICATION"), "http://service-notification:8006"),
 		"review":       getUpstream(v.GetString("UPSTREAM_REVIEW"), "http://service-review:8007"),
 		"chat":         getUpstream(v.GetString("UPSTREAM_CHAT"), "http://service-chat:8008"),
+		"incident":     getUpstream(v.GetString("UPSTREAM_INCIDENT"), "http://service-incident:8009"),
+		"loyalty":      getUpstream(v.GetString("UPSTREAM_LOYALTY"), "http://service-loyalty:8010"),
+		"zones":        getUpstream(v.GetString("UPSTREAM_ZONES"), "http://service-zones:8011"),
 	}
 
 	gatewayID := v.GetString("GATEWAY_ID")
