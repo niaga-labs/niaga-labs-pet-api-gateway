@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	gatewaymiddleware "github.com/Kilat-Pet-Delivery/api-gateway/internal/middleware"
 	"github.com/Kilat-Pet-Delivery/api-gateway/internal/proxy"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -21,6 +22,7 @@ const (
 	upstreamIncident     = "incident"
 	upstreamLoyalty      = "loyalty"
 	upstreamZones        = "zones"
+	upstreamShop         = "shop"
 )
 
 // NewNoRouteHandler returns the gateway fallback router for proxied REST traffic.
@@ -48,6 +50,9 @@ func NewNoRouteHandler(upstreams map[string]string, logger *zap.Logger) gin.Hand
 			c.Request.URL.Path = route.RewritePath
 			defer func() { c.Request.URL.Path = originalPath }()
 		}
+		if !gatewaymiddleware.EnforceShopScope(c) {
+			return
+		}
 		handler(c)
 	}
 }
@@ -74,6 +79,12 @@ func RouteForPath(path string) (RouteMatch, bool) {
 		return RouteMatch{Upstream: upstreamBooking}, true
 	case matchesPaymentRoute(path):
 		return RouteMatch{Upstream: upstreamPayment}, true
+	case matchesShopIdentityRoute(path):
+		return RouteMatch{Upstream: upstreamIdentity}, true
+	case matchesShopPaymentRoute(path):
+		return RouteMatch{Upstream: upstreamPayment}, true
+	case matchesShopRoute(path):
+		return RouteMatch{Upstream: upstreamShop}, true
 	case strings.HasPrefix(path, "/api/v1/tracking"):
 		return RouteMatch{Upstream: upstreamTracking}, true
 	case strings.HasPrefix(path, "/api/v1/notifications"):

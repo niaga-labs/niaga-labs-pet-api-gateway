@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	gatewaymiddleware "github.com/Kilat-Pet-Delivery/api-gateway/internal/middleware"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -57,6 +58,7 @@ func NewHTTPProxy(targetURL string, logger *zap.Logger) gin.HandlerFunc {
 			MaxIdleConnsPerHost: 25,
 			IdleConnTimeout:     90 * time.Second,
 		},
+		ModifyResponse: gatewaymiddleware.StripQRPickupToken,
 	}
 
 	return func(c *gin.Context) {

@@ -12,7 +12,6 @@ import (
 
 	"github.com/Kilat-Pet-Delivery/lib-common/auth"
 	"github.com/Kilat-Pet-Delivery/lib-common/kafka"
-	protoEvents "github.com/Kilat-Pet-Delivery/lib-proto/events"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -25,7 +24,16 @@ const (
 	chatPongWait       = 60 * time.Second
 	chatPingPeriod     = (chatPongWait * 9) / 10
 	chatMaxMessageSize = 16 * 1024
+
+	chatTopicEvents = "chat.events"
+	chatMessageSent = "chat.message_sent"
+	chatMessageRead = "chat.message_read"
+	chatTyping      = "chat.typing"
 )
+
+type chatThreadEvent struct {
+	ThreadID uuid.UUID `json:"thread_id"`
+}
 
 // ChatRealtime owns gateway-side chat and presence sockets.
 type ChatRealtime struct {
@@ -71,7 +79,7 @@ func (r *ChatRealtime) Start(ctx context.Context) {
 	reader := kafkago.NewReader(kafkago.ReaderConfig{
 		Brokers:  r.kafkaBrokers,
 		GroupID:  "api-gateway-chat-" + r.gatewayID,
-		Topic:    protoEvents.TopicChatEvents,
+		Topic:    chatTopicEvents,
 		MinBytes: 1,
 		MaxBytes: 10e6,
 	})
@@ -197,20 +205,20 @@ func (r *ChatRealtime) handleChatEvent(ctx context.Context, msg kafkago.Message)
 
 	var threadID uuid.UUID
 	switch cloudEvent.Type {
-	case protoEvents.ChatMessageSent:
-		var event protoEvents.ChatMessageSentEvent
+	case chatMessageSent:
+		var event chatThreadEvent
 		if err := cloudEvent.ParseData(&event); err != nil {
 			return err
 		}
 		threadID = event.ThreadID
-	case protoEvents.ChatMessageRead:
-		var event protoEvents.ChatMessageReadEvent
+	case chatMessageRead:
+		var event chatThreadEvent
 		if err := cloudEvent.ParseData(&event); err != nil {
 			return err
 		}
 		threadID = event.ThreadID
-	case protoEvents.ChatTyping:
-		var event protoEvents.ChatTypingEvent
+	case chatTyping:
+		var event chatThreadEvent
 		if err := cloudEvent.ParseData(&event); err != nil {
 			return err
 		}

@@ -21,6 +21,10 @@ func TestRouteForPathMapsNewServices(t *testing.T) {
 		{path: "/v1/incidents/incident-1", want: upstreamIncident, wantRewrite: ""},
 		{path: "/api/v1/quests/quest-1/redeem", want: upstreamLoyalty, wantRewrite: "/v1/quests/quest-1/redeem"},
 		{path: "/api/v1/zones/at", want: upstreamZones, wantRewrite: "/v1/zones/at"},
+		{path: "/api/v1/shops/shop-1/products", want: upstreamShop, wantRewrite: ""},
+		{path: "/api/v1/staff-invites/token/preview", want: upstreamShop, wantRewrite: ""},
+		{path: "/api/v1/identity/shops/me", want: upstreamIdentity, wantRewrite: ""},
+		{path: "/api/v1/payments/shops/shop-1/wallet", want: upstreamPayment, wantRewrite: ""},
 	}
 
 	for _, tt := range tests {
