@@ -10,11 +10,11 @@ import (
 	"syscall"
 	"time"
 
-	gwconfig "github.com/Kilat-Pet-Delivery/api-gateway/internal/config"
-	"github.com/Kilat-Pet-Delivery/api-gateway/internal/proxy"
-	"github.com/Kilat-Pet-Delivery/lib-common/logger"
-	"github.com/Kilat-Pet-Delivery/lib-common/middleware"
 	"github.com/gin-gonic/gin"
+	gwconfig "github.com/niaga-labs/niaga-labs-pet-api-gateway/internal/config"
+	"github.com/niaga-labs/niaga-labs-pet-api-gateway/internal/proxy"
+	"github.com/niaga-labs/niaga-labs-pet-lib-common/logger"
+	"github.com/niaga-labs/niaga-labs-pet-lib-common/middleware"
 	"go.uber.org/zap"
 )
 
