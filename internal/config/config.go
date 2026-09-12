@@ -38,10 +38,10 @@ func Load() (*GatewayConfig, error) {
 	}
 
 	upstreams := map[string]string{
-		"identity": getUpstream(v.GetString("UPSTREAM_IDENTITY"), "http://service-identity:8004"),
-		"runner":   getUpstream(v.GetString("UPSTREAM_RUNNER"), "http://service-runner:8003"),
-		"booking":  getUpstream(v.GetString("UPSTREAM_BOOKING"), "http://service-booking:8001"),
-		"payment":  getUpstream(v.GetString("UPSTREAM_PAYMENT"), "http://service-payment:8002"),
+		"identity":     getUpstream(v.GetString("UPSTREAM_IDENTITY"), "http://service-identity:8004"),
+		"runner":       getUpstream(v.GetString("UPSTREAM_RUNNER"), "http://service-runner:8003"),
+		"booking":      getUpstream(v.GetString("UPSTREAM_BOOKING"), "http://service-booking:8001"),
+		"payment":      getUpstream(v.GetString("UPSTREAM_PAYMENT"), "http://service-payment:8002"),
 		"tracking":     getUpstream(v.GetString("UPSTREAM_TRACKING"), "http://service-tracking:8005"),
 		"notification": getUpstream(v.GetString("UPSTREAM_NOTIFICATION"), "http://service-notification:8006"),
 		"review":       getUpstream(v.GetString("UPSTREAM_REVIEW"), "http://service-review:8007"),
