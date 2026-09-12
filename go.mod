@@ -1,9 +1,9 @@
-module github.com/Kilat-Pet-Delivery/api-gateway
+module github.com/niaga-labs/niaga-labs-pet-api-gateway
 
 go 1.24.0
 
 require (
-	github.com/Kilat-Pet-Delivery/lib-common v0.0.0
+	github.com/niaga-labs/niaga-labs-pet-lib-common v0.0.0
 	github.com/gin-gonic/gin v1.11.0
 	go.uber.org/zap v1.27.1
 )
@@ -56,4 +56,4 @@ require (
 	google.golang.org/protobuf v1.36.9 // indirect
 )
 
-replace github.com/Kilat-Pet-Delivery/lib-common => ../lib-common
+replace github.com/niaga-labs/niaga-labs-pet-lib-common => ../lib-common

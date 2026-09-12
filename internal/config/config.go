@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 
-	"github.com/Kilat-Pet-Delivery/lib-common/config"
+	"github.com/niaga-labs/niaga-labs-pet-lib-common/config"
 )
 
 // Upstream holds the name and URL for a backend service.
